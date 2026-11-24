@@ -11,7 +11,7 @@ from pathlib import Path
 
 import requests  # type: ignore[import-untyped, unused-ignore]
 
-from _version import __version__
+from _version import WINDOWS_VERSION, __version__
 
 # --- Configuration ---
 APP_VERSION = __version__
@@ -271,6 +271,7 @@ def create_windows_installer(final_app_path: Path, args: argparse.Namespace) -> 
         iscc_exe,
         "/Qp",
         f"/DMyAppVersion={APP_VERSION}",
+        f"/DMyInstallerVersion={WINDOWS_VERSION}",
         f"/DSourceDir={str(final_app_path.resolve())}",
         f"/DOutputBaseFilename={output_filename}",
         f"/DOutputDir={str(releases_dir.resolve())}",

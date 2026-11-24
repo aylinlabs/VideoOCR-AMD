@@ -1,13 +1,13 @@
 # VideoOCR-AMD Desktop for Windows 11
 
-Double-click the **Windows x64 Setup.exe** and follow the wizard. Open **VideoOCR-AMD** from Start. Setup installs the app, Python and the OCR models under `%LOCALAPPDATA%\Programs\VideoOCR-AMD` for the current user. To uninstall, open **Settings → Apps → Installed apps** and select **VideoOCR-AMD**.
+Double-click the **Windows x64 Setup.exe** and follow the wizard. Open **VideoOCR-AMD** from Start. Setup installs the app, Python and the OCR models under `%LOCALAPPDATA%\Programs\VideoOCR-AMD` for the current user. To uninstall, open **Settings â†’ Apps â†’ Installed apps** and select **VideoOCR-AMD**.
 
 For the portable ZIP, extract the complete folder and open **VideOCR-AMD.exe** inside it.
 
-1. Open **Process Video → Open File** and select a video with burned-in subtitles.
+1. Open **Process Video â†’ Open File** and select a video with burned-in subtitles.
 2. Choose **PaddleOCR - AMD DirectML (RX 9070 XT)** under **OCR Engine**. In Preview 5 choose the export language under **Subtitle Language**. Use the seek slider to find a subtitle and drag a box around the part of the frame where subtitles appear. Leave the box empty to use the bottom third.
 3. Choose a new SRT filename and click **Run**. The log shows the selected adapter, and the progress bar follows extraction. You can also use **Add to Queue** to capture settings for a later job.
-4. In VLC, choose **Subtitle → Add Subtitle File** to check the saved text and timing.
+4. In VLC, choose **Subtitle â†’ Add Subtitle File** to check the saved text and timing.
 
 **Advanced Settings** includes start and end times, confidence, frame skipping and other extraction controls. Preview 5 uses the same model pair for upright English and Chinese. **Chinese** enables Simplified output by default. Clear **Normalize Traditional to Simplified Chinese** to retain the recognized forms. **Chinese Traditional** renders selected Chinese lines in Traditional characters. CUDA, angle classification, server models and annotated-image export remain unavailable in DirectML mode. Existing VideOCR installations keep their original configuration. Desktop preferences are saved under the current user's VideOCR-AMD settings.
 
@@ -17,10 +17,12 @@ Frame extraction uses the CPU. For longer detection and OCR passes, the app star
 
 On Windows x64 with CPython 3.12 including Tcl/Tk, run `python windows/build_amd_desktop.py --output C:\Build\VideOCR-AMD --image-run "C:\path\to\real-image-run"`. Choose a new destination. The builder checks the two model and configuration hashes, installs the pinned wheels in the private runtime, and compiles a windowed launcher.
 
-With the x64 edition of Inno Setup 7 on PATH, build the setup executable with `ISCC /DBundle=C:\Build\VideOCR-AMD /DAppVersion=1.6.0-amd-preview.4 /OC:\Build windows\amd_setup.iss`. For a portable distribution, zip the bundle directory.
+With Inno Setup 7 x64 on PATH, run `./windows/build_installer.ps1 -Bundle C:\Build\VideOCR-AMD -OutputDirectory C:\Build`. The script reads the bundled app version and checks the compiled metadata. For a portable distribution, zip the bundle directory.
 
 ### Credits
 
 The original desktop interface and video processing come from VideOCR and its contributors. This edition uses ONNX conversions of PaddlePaddle's PP-OCRv6 small detection and recognition models, with the original preprocessing and character dictionary. Model weights are distributed under Apache License 2.0, copied to `app/models/LICENSE.txt`. Third-party packages and Python license files are included in the private runtime.
 
-[Detection model](https://huggingface.co/PaddlePaddle/PP-OCRv6_small_det) · [Recognition model](https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec)
+[Detection model](https://huggingface.co/PaddlePaddle/PP-OCRv6_small_det) Â· [Recognition model](https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec)
+
+The AMD fork now uses its own version sequence. Published `1.6.0-amd-preview.N` releases precede `0.2.0-preview.6`. Setup retains the same per-user AppId and previous installation directory. Preferences live under `%APPDATA%\VideOCR-AMD` outside the installed files. Preview installations check published previews and stable releases; stable installations check stable releases only.

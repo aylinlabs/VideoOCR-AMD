@@ -3,7 +3,7 @@ requires = ["setuptools>=77.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "VideOCR"
+name = "VideoOCR-AMD"
 dynamic = ["version"]
 description = "Extract burned-in subtitles with VideOCR, including a Windows DirectML preview for the Radeon RX 9070 XT."
 readme = "README.md"

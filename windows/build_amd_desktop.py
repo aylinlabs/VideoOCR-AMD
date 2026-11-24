@@ -82,7 +82,7 @@ def build(out: Path, image_run: Path | None, wheelhouses: list[Path] | None, tas
             (taskbar / Path(name).name).write_bytes(bundle.read(f'PyTaskbar-{TASKBAR}/{name}'))
     app = out / 'app'
     app.mkdir()
-    for name in ('VideOCR.py', '_version.py', 'CLI/videocr_cli.py'):
+    for name in ('VideOCR.py', '_version.py', 'amd_updates.py', 'CLI/videocr_cli.py'):
         dest = app / name
         dest.parent.mkdir(exist_ok=True)
         shutil.copy2(ROOT / name, dest)

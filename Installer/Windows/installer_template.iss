@@ -15,7 +15,9 @@
 #define MyAppName "VideOCR"
 #define MyAppURL "https://github.com/timminator/VideOCR"
 #define MyAppExeName "VideOCR.exe"
-#define MyInstallerVersion MyAppVersion + ".0"
+#ifndef MyInstallerVersion
+  #error "Define the numeric Windows version."
+#endif
 #define MyAppCopyright "timminator"
 
 [Setup]

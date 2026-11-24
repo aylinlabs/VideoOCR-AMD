@@ -11,6 +11,7 @@ on:
       - 'Installer/**'
       - 'VideOCR.py'
       - '_version.py'
+      - 'amd_updates.py'
       - 'AMD_DESKTOP.md'
       - '.github/workflows/windows-desktop.yml'
   workflow_dispatch:
@@ -44,17 +45,21 @@ jobs:
           $p = Start-Process ".\$compiler" -ArgumentList ('/VERYSILENT /NORESTART /CURRENTUSER /DIR="{0}\inno"' -f $env:RUNNER_TEMP) -Wait -PassThru
           if ($p.ExitCode) { throw "Compiler setup exited $($p.ExitCode)" }
       - name: Package the checked-out source
+        id: package
         shell: pwsh
         run: |
           $bundle = Join-Path $env:RUNNER_TEMP 'desktop'
           $models = Join-Path $env:RUNNER_TEMP 'VideoOCR-AMD Desktop/app/models'
           python windows/build_amd_desktop.py --output $bundle --models $models
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          & "$env:RUNNER_TEMP/inno/ISCC.exe" /Qp "/DBundle=$bundle" /DAppVersion=1.6.0-amd-preview.4 "/O$env:RUNNER_TEMP" /FVideoOCR-AMD-Windows-x64-preview.4-Setup windows/amd_setup.iss
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $setup = ./windows/build_installer.ps1 -Bundle $bundle -OutputDirectory $env:RUNNER_TEMP -Compiler "$env:RUNNER_TEMP/inno/ISCC.exe"
+          "artifact=$($setup.BaseName)" >> $env:GITHUB_OUTPUT
+      - name: Verify install, upgrade and uninstall on the disposable runner
+        shell: pwsh
+        run: ./windows/test_installer.ps1 -Setup "$env:RUNNER_TEMP/${{ steps.package.outputs.artifact }}.exe"
       - uses: actions/upload-artifact@v4
         with:
-          name: VideoOCR-AMD-Windows-x64-preview.4-Setup
-          path: ${{ runner.temp }}/VideoOCR-AMD-Windows-x64-preview.4-Setup.exe
+          name: ${{ steps.package.outputs.artifact }}
+          path: ${{ runner.temp }}/${{ steps.package.outputs.artifact }}.exe
           if-no-files-found: error
           compression-level: 0

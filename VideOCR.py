@@ -10,7 +10,7 @@
 
 # Windows-specific metadata for the executable
 # nuitka-project-if: {OS} == "Windows":
-#     nuitka-project-set: APP_VERSION = __import__("_version").__version__
+#     nuitka-project-set: APP_VERSION = __import__("_version").WINDOWS_VERSION
 #     nuitka-project: --file-description="VideOCR"
 #     nuitka-project: --file-version={APP_VERSION}
 #     nuitka-project: --product-name="VideOCR-GUI"
@@ -37,7 +37,6 @@ import sys
 import threading
 import time
 import tkinter.font as tkFont
-import urllib.request
 import webbrowser
 from fractions import Fraction
 from typing import IO, Any, cast
@@ -55,7 +54,8 @@ if sys.platform == "win32":
 else:
     from plyer import notification  # type: ignore
 
-from _version import __version__
+from _version import DISPLAY_VERSION
+from amd_updates import available_update
 
 
 # -- Save errors to log file ---
@@ -218,7 +218,7 @@ def get_config_file_path() -> str:
 
 
 # --- Configuration ---
-PROGRAM_VERSION = __version__
+PROGRAM_VERSION = DISPLAY_VERSION
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 AMD_DESKTOP = sys.platform == 'win32' and '--amd-desktop' in sys.argv
 AMD_ENGINE = 'PaddleOCR - AMD DirectML (RX 9070 XT)'
@@ -987,22 +987,11 @@ def popup_post_action_countdown(parent_window: sg.Window, action_text: str, icon
 def check_for_updates(window: sg.Window, manual_check: bool = False) -> None:
     """Checks GitHub for a new release."""
     try:
-        headers = {'User-Agent': 'VideOCR-GUI'}
-        req = urllib.request.Request("https://api.github.com/repos/aylinlabs/VideoOCR-AMD/releases/latest", headers=headers)
-
-        with urllib.request.urlopen(req, timeout=5) as response:
-            if response.status == 200:
-                data = json.loads(response.read().decode())
-                latest_version_str = data['tag_name']
-
-                current_version_tuple = tuple(map(int, (PROGRAM_VERSION.split('.'))))
-                latest_version_tuple = tuple(map(int, (latest_version_str.lstrip('v').split('.'))))
-
-                if latest_version_tuple > current_version_tuple:
-                    release_url = data['html_url']
-                    window.write_event_value('-NEW_VERSION_FOUND-', {'version': latest_version_str, 'url': release_url})
-                elif manual_check:
-                    window.write_event_value('-NO_UPDATE_FOUND-', None)
+        update = available_update()
+        if update:
+            window.write_event_value('-NEW_VERSION_FOUND-', update)
+        elif manual_check:
+            window.write_event_value('-NO_UPDATE_FOUND-', None)
     except Exception as e:
         log_error(f"Failed to check for updates: {e}")
         if manual_check:
