@@ -3,11 +3,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'amd_experiment'))
 from paddlex_runtime import trace_sessions
-from video_backend import result_rows, verified_models
+from video_backend import decode_video_lines, result_rows, verified_models
 
 
 class Box:
@@ -16,6 +16,19 @@ class Box:
 
 
 class VideoBackendTests(unittest.TestCase):
+    def test_ctc_decoder_receives_identical_indices_and_confidences(self) -> None:
+        import numpy as np
+
+        logits = np.array([[[.3, .7, .7], [1., 0., 0.]], [[0., 0., 0.], [.2, .1, .9]]], dtype=np.float32)
+        decoder = Mock()
+        decoder.decode.return_value = [('門', .7), ('door', .9)]
+        self.assertEqual(decode_video_lines(decoder, [logits]), (['門', 'door'], [.7, .9]))
+        indices, probabilities = decoder.decode.call_args.args
+        np.testing.assert_array_equal(indices, logits.argmax(axis=-1))
+        np.testing.assert_array_equal(probabilities, logits.max(axis=-1))
+        self.assertEqual(decoder.decode.call_args.kwargs, {'is_remove_duplicate': True})
+        self.assertIs(decode_video_lines(decoder, [logits], return_word_box=True), decoder.return_value)
+
     def test_detection_emits_real_scores(self) -> None:
         box = Box()
         rows = list(result_rows({'dt_polys': [box], 'dt_scores': [0.87]}, True))

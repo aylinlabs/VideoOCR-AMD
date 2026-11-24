@@ -4,6 +4,7 @@ import os
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import ExitStack
+from functools import partial
 from itertools import batched, groupby
 from pathlib import Path
 from time import perf_counter
@@ -70,6 +71,19 @@ def predict_video_images(images: Sequence[Path], predict: Callable[[list[Any]], 
             paths = next_paths
 
 
+def decode_video_lines(decoder: Any, predictions: list[Any], *, return_word_box: bool = False, **options: Any) -> Any:
+    """Use the pinned CTC decoder with the winning probabilities from the same logits."""
+    import numpy as np
+
+    if return_word_box:
+        return decoder(predictions, return_word_box=True, **options)
+    logits = np.asarray(predictions[0])
+    indices = logits.argmax(axis=-1)
+    probabilities = np.take_along_axis(logits, indices[..., None], axis=-1)[..., 0]
+    lines = decoder.decode(indices, probabilities, is_remove_duplicate=True)
+    return [line[0] for line in lines], [line[1] for line in lines]
+
+
 class _VideoPass:
     def __init__(self, models: Path, adapter: int, traces: Path, detection: bool) -> None:
         from paddlex import create_predictor
@@ -86,7 +100,10 @@ class _VideoPass:
                     'PP-OCRv6_small_det', model_dir=str(models / 'det'), device='cpu',
                     engine='onnxruntime', engine_config=settings, batch_size=4)
             else:
-                self.predict = ocr_pipeline(models / 'det', models / 'rec', settings, batch_size=4).predict
+                pipeline = ocr_pipeline(models / 'det', models / 'rec', settings, batch_size=4)
+                recognizer = pipeline.text_rec_model
+                recognizer.post_op = partial(decode_video_lines, recognizer.post_op)
+                self.predict = pipeline.predict
         required = {'det'} if detection else {'det', 'rec'}
         if {kind for kind, _ in self.sessions} != required:
             raise RuntimeError('Missing expected video ONNX sessions')
