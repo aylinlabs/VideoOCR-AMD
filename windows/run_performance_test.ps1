@@ -30,7 +30,7 @@ try {
         detection_sha256 = (Get-FileHash -LiteralPath "$models\det\inference.onnx").Hash
         recognition_sha256 = (Get-FileHash -LiteralPath "$models\rec\inference.onnx").Hash
         start = $start; end = $end; language = 'en'; adapter = 0
-        gpu_counters = 'Not captured automatically. Record Windows Task Manager GPU and dedicated memory separately.'
+        gpu_counters = 'Machine-wide Windows GPU engine and adapter counters are sampled when available.'
         privacy = 'Logs may contain file paths and recognized text. Review them before sharing.'
     }
     $metadata | ConvertTo-Json | Set-Content -LiteralPath "$report\test-info.json" -Encoding utf8
@@ -57,9 +57,13 @@ try {
         Write-Host "Running $name with $workers worker(s). Please keep this window open."
         $output = Join-Path $report $name
         $log = Join-Path $report "$name.log"
-        & $python -B $profile $file.FileName $models $output --start $start --end $end --workers $workers --lang en *> $log
-        if ($LASTEXITCODE -ne 0 -or !(Test-Path "$output\summary.json") -or !(Test-Path "$output\output.srt") -or !(Test-Path "$output\execution.json")) {
-            throw "The $name run failed. The report contains its log. Remaining runs were stopped."
+        $errorLog = Join-Path $report "$name-stderr.log"
+        $arguments = @('-B', ('"{0}"' -f $profile), ('"{0}"' -f $file.FileName), ('"{0}"' -f $models),
+                       ('"{0}"' -f $output), '--start', $start, '--end', $end,
+                       '--workers', $workers, '--lang', 'en')
+        $process = Start-Process -FilePath $python -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput $log -RedirectStandardError $errorLog
+        if ($process.ExitCode -ne 0 -or !(Test-Path "$output\summary.json") -or !(Test-Path "$output\output.srt") -or !(Test-Path "$output\execution.json")) {
+            throw "The $name run failed (exit $($process.ExitCode)). Check its log and stderr log. Remaining runs were stopped."
         }
         $evidence = Get-Content "$output\execution.json" -Raw | ConvertFrom-Json
         if (!$evidence.sampled_node_events.ocr.rec.counts.DmlExecutionProvider) {
