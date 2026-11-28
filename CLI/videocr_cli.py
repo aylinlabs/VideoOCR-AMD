@@ -237,7 +237,7 @@ def main() -> None:
                 ocr_images_output_dir=args.ocr_images_output_dir,
                 **({'directml_adapter': args.directml_adapter, 'directml_workers': args.directml_workers} if args.directml else {})
             )
-    except ValueError as e:
+    except (ValueError, RuntimeError, OSError) as e:
         print(f"Error: {e}")
         sys.exit(1)
 

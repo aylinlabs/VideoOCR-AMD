@@ -251,7 +251,9 @@ if AMD_DESKTOP:
                 status = ', DirectX 12 unavailable'
             else:
                 status = ''
-            label = f"{adapter['name']} (adapter {adapter['index']}, {adapter['dedicated_bytes'] / 1024 ** 3:.1f} GiB{status})"
+            available = adapter['available_bytes']
+            budget = f", {available / 1024 ** 3:.1f} GiB budget free" if available is not None else ', budget unavailable'
+            label = f"{adapter['name']} (adapter {adapter['index']}, {adapter['dedicated_bytes'] / 1024 ** 3:.1f} GiB dedicated{budget}{status})"
             AMD_ADAPTERS[label] = adapter['index']
     except (OSError, RuntimeError) as discovery_error:
         print(f'GPU discovery failed: {discovery_error}', flush=True)

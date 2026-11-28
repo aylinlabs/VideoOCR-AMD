@@ -28,7 +28,10 @@ def export_desktop(video_path: str, file_path: str, **settings: Any) -> None:
     requested_workers = settings.pop('directml_workers', None)
     adapters = enumerate_adapters()
     adapter = select_adapter(adapters, selected)
-    engine_settings('directml', adapter['index'])
+    try:
+        engine_settings('directml', adapter['index'])
+    except (ImportError, RuntimeError) as error:
+        raise ValueError(f'DirectML is unavailable for the selected AMD GPU: {error}') from error
     limit = default_worker_limit(adapter['dedicated_bytes'], adapter['available_bytes'])
     if requested_workers is not None:
         limit = min(requested_workers, limit)
