@@ -1,32 +1,79 @@
 # VideoOCR-AMD
 
-Extract burned-in subtitles from video and save them as a timed SubRip (`.srt`) file. On the Preview 5 source branch, you can export English, Simplified Chinese or Traditional Chinese from a bilingual video. The Windows desktop app uses PaddleOCR with DirectML on the **AMD Radeon RX 9070 XT**. It includes Python, the OCR models, a video preview, adjustable subtitle regions and a processing queue.
+Extract burned-in subtitles from video into a timed SubRip (`.srt`) file. VideoOCR-AMD is a Windows-first fork of [Timminator's VideOCR](https://github.com/timminator/VideOCR), with an experimental AMD Radeon path using PaddleOCR and ONNX Runtime DirectML.
 
-## Download for Windows 11 (x64)
+[Download for Windows](https://github.com/SimpleCraftApp/VideoOCR-AMD/releases) · [GPU compatibility](AMD_GPU_COMPATIBILITY.md) · [Changelog](CHANGELOG.md) · [Upstream project](https://github.com/timminator/VideOCR)
 
-Open [Releases](https://github.com/aylinlabs/VideoOCR-AMD/releases) and choose the Windows executable under **Assets**. GitHub also provides ZIP and tar.gz archives of the source code.
+## Features
 
-- **Desktop Preview 1** is a portable download. Run the executable, choose an extraction folder and open **VideOCR-AMD.exe** inside it. Keep the extracted folders together.
-- **Windows Setup builds** install the app for your Windows account. Run the file ending in **-Setup.exe**, then open **VideoOCR-AMD** from Start. You can remove it through **Settings → Apps → Installed apps**.
+- Extract subtitles from videos into timestamped SRT files.
+- Select a subtitle region, process a queue, and pause or cancel work.
+- Use AMD Radeon acceleration through DirectML, with automatic or manual adapter selection in the current source.
+- Extract English, Simplified Chinese, or Traditional Chinese subtitles with the AMD OCR path.
+- Adjust worker settings within memory-aware limits and inspect diagnostic information.
+- Use the existing CPU and NVIDIA CUDA paths where configured and supported.
+
+![Earlier VideOCR interface](Pictures/GUI.png)
+
+The image shows an earlier interface. Controls can differ in current builds.
+
+## Install on Windows
+
+1. Open the [Releases page](https://github.com/SimpleCraftApp/VideoOCR-AMD/releases) and download the Windows x64 installer from the release you want to use.
+2. Run the installer and follow its prompts. Installation options vary between releases.
+3. Open VideoOCR-AMD from the Start menu. The installer includes the application and its runtime dependencies.
+
+The GPU selection and memory controls described below are present in the current source. Check the release notes for the build you install, as earlier downloads may have different controls.
 
 ## Extract subtitles
 
-1. Choose **Open File** and select a video.
-2. Select **PaddleOCR - AMD DirectML (RX 9070 XT)**. In Preview 5, choose **English**, **Chinese** (Simplified) or **Chinese Traditional** under **Subtitle Language**. Seek to a frame with a subtitle and drag a box around the lines you want. The default region is the bottom third of the picture.
-3. Choose a new SRT filename and click **Run**. Open the resulting file as a subtitle track in your video player.
+1. Open a video and choose where to save the SRT file.
+2. Choose the AMD DirectML OCR engine and the subtitle language. Older releases may show a slightly different engine label.
+3. If useful, select a crop around the subtitles to reduce unrelated on-screen text.
+4. Run the extraction and review the resulting SRT for recognition, language-selection, and timing errors.
 
-To save both languages, run the same clip twice with a different subtitle language and output filename. Published builds through Preview 4 offer only the English setting. [Language selection and validation](PREVIEW_5_MULTILINGUAL.md)
+## AMD DirectML and GPU selection
 
-Frame extraction runs on the CPU. On longer jobs, the current desktop source uses up to three DirectML workers for text detection and recognition. The processing log reports the worker count. [Desktop settings and build instructions](AMD_DESKTOP.md)
+The current source discovers AMD adapters through DXGI and checks DirectX 12 eligibility. Automatic selection prefers an eligible discrete Radeon adapter, considering available memory. You can also choose an adapter manually. Adapter numbers are not assumed to start with a particular GPU.
 
-## Hardware and testing
+Detection alone does **not** establish OCR compatibility. The application also needs an available DirectML provider, working detector and recognizer sessions, successful inference, and evidence that DirectML actually executes model nodes. Some model operations may still run on the CPU. Errors are reported when the AMD path cannot be verified.
 
-The AMD desktop path has been tested on Windows 11 with a 16 GB RX 9070 XT. It currently selects that adapter model. Other Radeon cards and Linux ROCm require separate validation. The original CPU and NVIDIA CUDA workflows are described in the [upstream VideOCR guide](https://github.com/timminator/VideOCR).
+Worker limits take account of dedicated memory and the available GPU memory budget when it can be queried. The application applies conservative limits when memory is low or unknown; requested worker counts can be capped. Available memory changes as other applications use the GPU, so installed VRAM is not the same as free VRAM.
 
-On one 21:30 episode, the Preview 3 worker update reduced total export time from 3:30 to 2:44. The two runs produced byte-identical subtitles across all 368 cues. This comparison measured performance and consistency on that episode. OCR accuracy also depends on the subtitle region, font and background.
+## Languages
 
-## Source, console tools and credits
+The AMD DirectML path currently supports **English**, **Simplified Chinese**, and **Traditional Chinese** selection. Simultaneous languages, stylized text, scene text, credits, and mixed-script names may require manual correction. See the [multilingual notes](PREVIEW_5_MULTILINGUAL.md) for the scope and test results. Other upstream language mappings should not be taken as a claim of AMD support.
 
-The desktop installer bundles its dependencies. Developers using the separate console launcher can follow the [console setup](AMD_VIDEO_WINDOWS.md), [model setup](AMD_TEST_WINDOWS.md) and [image comparison guide](REAL_IMAGE_TEST_WINDOWS.md).
+## GPU compatibility
 
-This fork builds on Tim Lodemann’s VideOCR and the earlier contributors credited in the [MIT license](LICENSE). PaddleOCR and PaddleX supply the models and inference pipeline. ONNX Runtime supplies DirectML execution. [AMD porting notes](AMD_PORTING_PLAN.md)
+| Radeon generation | Examples | Status |
+| --- | --- | --- |
+| RX 9000 / RDNA 4 | RX 9070 XT | Prior real-hardware OCR validation; changes to GPU selection still need a fresh hardware check. |
+| RX 9000 / RDNA 4 | Other RX 9000 models | Discovery and selection implemented; hardware OCR unverified. |
+| RX 7000 / RDNA 3 | RX 7900 XT, RX 7800 XT | Discovery and selection implemented; hardware OCR unverified. |
+| RX 6000 / RDNA 2 | RX 6800 XT, RX 6600 | Discovery and selection implemented; hardware OCR unverified. |
+
+An AMD vendor ID does not guarantee DirectX 12 or DirectML compatibility. See [GPU compatibility and diagnostics](AMD_GPU_COMPATIBILITY.md) for eligibility checks, memory behavior, and limitations. Mocked tests are not hardware validation.
+
+## System requirements
+
+- Windows 11 x64 is the primary development and testing environment.
+- For AMD acceleration, a compatible AMD GPU, a working DirectX 12 driver, and DirectML support are required. Compatibility depends on the device and driver.
+- Sufficient disk space is required for the application, OCR models, input video, and temporary files. GPU memory requirements depend on the workload and worker count.
+- Internet access is needed to download the installer and any models that are not already available locally.
+
+## Troubleshooting
+
+| Problem | What to check |
+| --- | --- |
+| No eligible Radeon GPU appears | Confirm Windows sees the adapter and its driver supports DirectX 12. Restart the app after hardware or driver changes. |
+| DirectML initialization or inference fails | Review the diagnostic message, close GPU-heavy applications, and try fewer workers. Detection by itself does not verify inference. |
+| Subtitles include unwanted text | Crop closer to the subtitle area, select the intended language, and review the output. Mixed-script or overlapping text can remain ambiguous. |
+| Extraction is slow or runs out of memory | Reduce concurrent GPU workloads or workers. Video decoding and parts of OCR also use the CPU. GPU utilization alone does not measure end-to-end speed. |
+| Installation or model access fails | Check available space and folder permissions, then follow the instructions for the specific release. |
+
+For more detail, see [AMD desktop notes](AMD_DESKTOP.md) and [GPU compatibility](AMD_GPU_COMPATIBILITY.md).
+
+## Credits and license
+
+VideoOCR-AMD builds on [VideOCR by Timminator](https://github.com/timminator/VideOCR) and its contributors. It also uses PaddleOCR, PaddleX, ONNX Runtime, and DirectML. See [LICENSE](LICENSE) and the respective projects for license terms.
