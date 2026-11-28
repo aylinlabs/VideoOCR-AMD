@@ -40,7 +40,8 @@ class RadeonSelectionTests(unittest.TestCase):
         gib = 1024 ** 3
         for capacity, expected in [(0, 1), (4, 1), (8, 1), (12, 2), (16, 3), (24, 3)]:
             with self.subTest(capacity=capacity):
-                self.assertEqual(default_worker_limit(capacity * gib), expected)
+                self.assertEqual(default_worker_limit(capacity * gib, 20 * gib), expected)
+        self.assertEqual(default_worker_limit(16 * gib), 1)
         self.assertEqual(default_worker_limit(16 * gib, 3 * gib), 1)
         self.assertEqual(default_worker_limit(16 * gib, 5 * gib), 2)
         self.assertEqual(default_worker_limit(16 * gib, 10 * gib), 3)

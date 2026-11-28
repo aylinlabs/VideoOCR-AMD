@@ -116,10 +116,12 @@ def select_adapter(adapters: list[Adapter], index: int | None = None) -> Adapter
 def default_worker_limit(dedicated_bytes: int, available_bytes: int | None = None) -> int:
     # Capacity is not free memory. Restrict simultaneous sessions on smaller or unknown GPUs.
     gib = 1024 ** 3
-    if available_bytes is not None and available_bytes < 4 * gib:
+    if available_bytes is None:
         return 1
-    if available_bytes is not None and available_bytes < 6 * gib:
-        return min(2, default_worker_limit(dedicated_bytes))
+    if available_bytes < 4 * gib:
+        return 1
+    if available_bytes < 6 * gib:
+        return 1 if dedicated_bytes < 10 * gib else 2
     if dedicated_bytes < 10 * gib:
         return 1
     if dedicated_bytes < 15 * gib:
