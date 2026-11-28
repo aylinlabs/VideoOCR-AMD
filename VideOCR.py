@@ -239,7 +239,7 @@ DEFAULT_OCR_IMAGE_MAX_WIDTH = 720
 DEFAULT_FRAMES_TO_SKIP = 1
 DEFAULT_TIME_START = "0:00"
 AMD_ADAPTERS: dict[str, int] = {}
-if AMD_DESKTOP:
+if sys.platform == 'win32' and AMD_DESKTOP:
     try:
         sys.path.insert(0, os.path.join(APP_DIR, 'amd_experiment'))
         from dxgi_adapters import enumerate_adapters
