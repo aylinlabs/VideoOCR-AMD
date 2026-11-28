@@ -28,13 +28,13 @@ try {
     }
     if (-not $Images.Count) { throw 'No screenshots selected.' }
     foreach ($image in $Images) { if (-not (Test-Path -LiteralPath $image -PathType Leaf)) { throw 'A selected screenshot was not found.' } }
-    Write-Host 'Checking the RX 9070 XT adapter...'
+    Write-Host 'Checking the AMD adapter...'
     $json = & $ort (Join-Path $experiment 'dxgi_adapters.py')
     if ($LASTEXITCODE -ne 0) { throw 'Unable to enumerate DirectX adapters.' }
     $adapter = Get-SelectedAmdAdapter -Json ($json -join "`n")
     $json | Set-Content -Encoding utf8 (Join-Path $logs 'dxgi-adapters.json')
-    Write-Host "RX 9070 XT: DirectX adapter $adapter"
-    Write-Host 'Open Task Manager with Ctrl+Shift+Esc, select Performance, then GPU. Watch the RX 9070 XT during the test.'
+    Write-Host "AMD GPU: DirectX adapter $adapter"
+    Write-Host 'Open Task Manager with Ctrl+Shift+Esc, select Performance, then GPU. Watch the selected AMD GPU during the test.'
     Write-Host 'This test adds hash-verified PaddleX packages in a separate temporary folder and reuses your previous Python and models.'
     if ((Read-Host 'Download the additional verified packages? Type YES to continue') -cne 'YES') { throw 'Dependency download skipped.' }
     $deps = Join-Path $work 'paddlex-deps'

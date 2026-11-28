@@ -121,7 +121,10 @@ def _process_images(images: Sequence[Path]) -> BatchResult:
 class DirectMLVideoBackend:
     name = 'directml'
 
-    def __init__(self, models: Path, adapter: int, diagnostics: Path) -> None:
+    def __init__(self, models: Path, adapter: int, diagnostics: Path, *, worker_limit: int = 3) -> None:
+        if worker_limit not in (1, 2, 3):
+            raise ValueError("DirectML workers must be between 1 and 3")
+        self.worker_limit = worker_limit
         self.models = models
         self.adapter = adapter
         self.diagnostics = diagnostics
@@ -143,7 +146,7 @@ class DirectMLVideoBackend:
         # process owns its sessions and processes its GPU calls sequentially.
         images_per_worker = 128 if detection else 256
         memory_limit = max(1, psutil.virtual_memory().available // (2 * 1024 ** 3))
-        workers = min(3, 1 + len(images) // images_per_worker, memory_limit)
+        workers = min(self.worker_limit, 1 + len(images) // images_per_worker, memory_limit)
         config = (self.models, self.adapter, traces, detection)
         evidence = self.evidence[stage] = {}
         start = perf_counter()

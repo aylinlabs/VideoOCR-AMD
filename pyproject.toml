@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "VideoOCR-AMD"
 dynamic = ["version"]
-description = "Extract burned-in subtitles with VideOCR, including a Windows DirectML preview for the Radeon RX 9070 XT."
+description = "Extract burned-in subtitles with VideOCR, including an AMD Windows DirectML preview."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]

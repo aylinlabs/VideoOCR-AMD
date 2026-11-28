@@ -221,7 +221,7 @@ def get_config_file_path() -> str:
 PROGRAM_VERSION = DISPLAY_VERSION
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 AMD_DESKTOP = sys.platform == 'win32' and '--amd-desktop' in sys.argv
-AMD_ENGINE = 'PaddleOCR - AMD DirectML (RX 9070 XT)'
+AMD_ENGINE = 'PaddleOCR - AMD DirectML'
 LANGUAGES_DIR = os.path.join(APP_DIR, 'languages')
 VIDEOCR_PATH = find_videocr_program()
 DEFAULT_OUTPUT_SRT = ""
@@ -238,6 +238,26 @@ DEFAULT_SSIM_THRESHOLD = 94
 DEFAULT_OCR_IMAGE_MAX_WIDTH = 720
 DEFAULT_FRAMES_TO_SKIP = 1
 DEFAULT_TIME_START = "0:00"
+AMD_ADAPTERS: dict[str, int] = {}
+if sys.platform == 'win32' and AMD_DESKTOP:
+    try:
+        sys.path.insert(0, os.path.join(APP_DIR, 'amd_experiment'))
+        from dxgi_adapters import enumerate_adapters
+
+        for adapter in enumerate_adapters():
+            if adapter['vendor_id'].lower() != '1002':
+                status = ', not AMD'
+            elif not adapter['directx12']:
+                status = ', DirectX 12 unavailable'
+            else:
+                status = ''
+            available = adapter['available_bytes']
+            budget = f", {available / 1024 ** 3:.1f} GiB budget free" if available is not None else ', budget unavailable'
+            label = f"{adapter['name']} (adapter {adapter['index']}, {adapter['dedicated_bytes'] / 1024 ** 3:.1f} GiB dedicated{budget}{status})"
+            AMD_ADAPTERS[label] = adapter['index']
+    except (OSError, RuntimeError) as discovery_error:
+        print(f'GPU discovery failed: {discovery_error}', flush=True)
+
 KEY_SEEK_STEP = 1
 CONFIG_FILE = get_config_file_path()
 CONFIG_SECTION = 'Settings'
@@ -2016,6 +2036,14 @@ def get_processing_args(values: dict[str, Any], window: sg.Window) -> tuple[dict
 
     if selected_engine_display == AMD_ENGINE:
         args['directml'] = True
+        selected_adapter = values.get('-AMD-ADAPTER-', 'Automatic')
+        if selected_adapter != 'Automatic':
+            if selected_adapter not in AMD_ADAPTERS:
+                return None, ['The selected AMD adapter is unavailable. Restart the app and select a GPU.']
+            args['directml_adapter'] = AMD_ADAPTERS[selected_adapter]
+        selected_workers = values.get('-AMD-WORKERS-', 'Automatic')
+        if selected_workers != 'Automatic':
+            args['directml_workers'] = int(selected_workers)
         for key in AMD_UNSUPPORTED:
             args[key[2:]] = False
 
@@ -2212,7 +2240,7 @@ def run_videocr(args_dict: dict[str, Any], window: sg.Window) -> bool:
                     gui_queue.put(('-PROGRESS-SMOOTH-', {'text': msg, 'percent': None}))
                     continue
 
-                if args_dict.get('directml') and line.startswith(('Using ', 'Error: ')):
+                if args_dict.get('directml') and line.startswith(('Using ', 'Error: ', 'DirectML detector', 'Limited workers')):
                     gui_queue.put(('-VIDEOCR_OUTPUT-', line + '\n'))
                 filtered_match = FILTERED_PATTERN.search(line)
                 if filtered_match:
@@ -2599,6 +2627,8 @@ tab1_content = [
             sg.Input(key="--output", disabled_readonly_background_color=sg.theme_input_background_color(), readonly=True, disabled=True, size=(40, 1)), VerticalStrut()],
             [sg.Text("OCR Engine:", size=(17, 1), key='-LBL-OCR_ENGINE-'),
             sg.Combo(OCR_ENGINES, default_value=DEFAULT_OCR_ENGINE, key="-OCR_ENGINE_COMBO-", size=(38, 1), readonly=True, enable_events=True, expand_x=True), VerticalStrut()],
+            *([[sg.Text("AMD GPU:", size=(17, 1)), sg.Combo(['Automatic', *AMD_ADAPTERS], default_value='Automatic', key='-AMD-ADAPTER-', readonly=True, size=(38, 1))],
+               [sg.Text("GPU workers:", size=(17, 1)), sg.Combo(['Automatic', '1', '2', '3'], default_value='Automatic', key='-AMD-WORKERS-', readonly=True, size=(38, 1))]] if AMD_DESKTOP else []),
             [sg.Text("Subtitle Language:", size=(17, 1), key='-LBL-SUB_LANG-'),
             sg.Combo(engine_languages(DEFAULT_OCR_ENGINE), default_value=DEFAULT_SUBTITLE_LANGUAGE, key="-LANG_COMBO-", size=(38, 1), readonly=True, enable_events=True, expand_x=True), VerticalStrut()],
             [sg.Text("Subtitle Position:", size=(17, 1), key='-LBL-SUB_POS-'),
@@ -3464,7 +3494,7 @@ while True:
 
     elif event == '-BTN-OCR-INFO-':
         if AMD_DESKTOP and values['-OCR_ENGINE_COMBO-'] == AMD_ENGINE:
-            custom_popup(window, "AMD DirectML", "Local English, Simplified Chinese and Traditional Chinese subtitle extraction on the Radeon RX 9070 XT. Draw a crop box on the video or choose full frame.", icon=ICON_PATH)
+            custom_popup(window, "AMD DirectML", "Local English, Simplified Chinese and Traditional Chinese subtitle extraction using an AMD GPU with DirectML. The log confirms the selected adapter and model execution. Draw a crop box on the video or choose full frame.", icon=ICON_PATH)
             continue
         custom_popup(window, LANG.get('engine_info', "OCR Engine Information"), LANG.get('engine_message', (
             "PaddleOCR (Det. + Rec.):\n"
@@ -4305,6 +4335,12 @@ while True:
                     lookup = paddle_abbr_lookup
 
                 window['-OCR_ENGINE_COMBO-'].update(value=engine_display)
+                if AMD_DESKTOP:
+                    adapter_index = args.get('directml_adapter')
+                    adapter_label = next((label for label, index in AMD_ADAPTERS.items() if index == adapter_index),
+                                         'Automatic' if adapter_index is None else f'Unavailable adapter {adapter_index}')
+                    window['-AMD-ADAPTER-'].update(values=['Automatic', *AMD_ADAPTERS, adapter_label], value=adapter_label)
+                    window['-AMD-WORKERS-'].update(value=str(args['directml_workers']) if args.get('directml_workers') else 'Automatic')
 
                 # Restore Language based on the restored engine
                 saved_lang_abbr = args.get('lang', 'en')

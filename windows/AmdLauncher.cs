@@ -29,7 +29,7 @@ internal static class AmdLauncher
             if (interactive)
             {
                 Console.Title = "VideOCR AMD Preview";
-                Console.WriteLine("VideOCR AMD Preview | Windows 11 | Radeon RX 9070 XT");
+                Console.WriteLine("VideOCR AMD Preview | Windows 11 | AMD Radeon DirectML");
                 Console.WriteLine("Press Enter to export subtitles from a video.");
                 Console.WriteLine("On a new PC, install Python 3.12 x64 and 7-Zip, then run options 1 and 2 in order.");
                 Console.WriteLine("1  Prepare models and DirectML");

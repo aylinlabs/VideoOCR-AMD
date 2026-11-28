@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$Video, [string]$OutputFile, [string]$ImageRun, [string]$RuntimeRun,
+param([string]$Video, [string]$OutputFile, [string]$ImageRun, [string]$RuntimeRun, [Nullable[int]]$Adapter = $null,
       [ValidateSet('en', 'ch', 'chinese_cht')][string]$Language = 'en')
 $ErrorActionPreference = 'Stop'
 $experiment = Join-Path $PSScriptRoot 'amd_experiment'
@@ -73,8 +73,8 @@ try {
     Write-Host "Using OCR models and packages from $ImageRun"
     $adapters = & $ort (Join-Path $experiment 'dxgi_adapters.py')
     if ($LASTEXITCODE -ne 0) { throw 'Windows could not list the DirectX adapters.' }
-    $adapter = Get-SelectedAmdAdapter -Json ($adapters -join [Environment]::NewLine)
-    Write-Host "Using Radeon RX 9070 XT (DirectX adapter $adapter)."
+    $adapter = Get-SelectedAmdAdapter -Json ($adapters -join [Environment]::NewLine) -Index $Adapter
+    Write-Host "Using AMD Radeon DirectX adapter $adapter."
     $work = Join-Path $PSScriptRoot 'amd-work'
     [IO.Directory]::CreateDirectory($work) | Out-Null
     $id = [guid]::NewGuid().ToString('N')

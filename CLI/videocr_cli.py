@@ -110,6 +110,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Extract subtitles from a video using PaddleOCR or Google Lens.')
 
     parser.add_argument('--directml', action='store_true', help='Use the prepared Windows AMD desktop runtime')
+    parser.add_argument('--directml_adapter', type=restricted_int(min_val=0), default=None, help='DXGI adapter index')
+    parser.add_argument('--directml_workers', type=restricted_int(1, 3), default=None, help='Maximum DirectML worker processes')
     parser.add_argument('--video_path', type=valid_video_path, required=True, help='Path to the video file')
     parser.add_argument('--output', type=valid_output_path, default='subtitle.srt', help='Output SRT file path (default: subtitle.srt)')
     parser.add_argument('--ocr_engine', type=str, choices=['paddleocr', 'google_lens'], default='paddleocr', help='OCR engine to use in the recognition step (default: paddleocr)')
@@ -232,9 +234,10 @@ def main() -> None:
                 disable_stitching=args.disable_stitching,
                 subtitle_alignments=[args.subtitle_alignment, args.subtitle_alignment2],
                 save_ocr_images=args.save_ocr_images,
-                ocr_images_output_dir=args.ocr_images_output_dir
+                ocr_images_output_dir=args.ocr_images_output_dir,
+                **({'directml_adapter': args.directml_adapter, 'directml_workers': args.directml_workers} if args.directml else {})
             )
-    except ValueError as e:
+    except (ValueError, RuntimeError, OSError) as e:
         print(f"Error: {e}")
         sys.exit(1)
 
