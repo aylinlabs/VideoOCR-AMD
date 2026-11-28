@@ -31,6 +31,8 @@ class RadeonSelectionTests(unittest.TestCase):
         self.assertEqual([a['index'] for a in compatible_adapters(adapters)], [0, 2, 3, 4])
         self.assertEqual(select_adapter(adapters)['index'], 3)
         self.assertEqual(select_adapter(adapters, 4)['name'], 'RX 9070 XT')
+        adapters[3]['available_bytes'] = 1024 ** 3
+        self.assertEqual(select_adapter(adapters)['index'], 4)
         with self.assertRaises(ValueError):
             select_adapter(adapters, 5)
         with self.assertRaises(ValueError):

@@ -110,7 +110,7 @@ def select_adapter(adapters: list[Adapter], index: int | None = None) -> Adapter
         candidates = [a for a in candidates if a['index'] == index]
     if not candidates:
         raise ValueError('No selected AMD adapter passed the DirectX 12 device check. Check the GPU selection and driver.')
-    return max(candidates, key=lambda a: a['dedicated_bytes'])
+    return max(candidates, key=lambda a: (a['dedicated_bytes'] > 0, a['available_bytes'] or 0, a['dedicated_bytes']))
 
 
 def default_worker_limit(dedicated_bytes: int, available_bytes: int | None = None) -> int:

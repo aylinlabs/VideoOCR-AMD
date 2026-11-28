@@ -1,6 +1,6 @@
 # AMD Radeon DirectML compatibility
 
-The desktop enumerates DXGI adapters in the same index order used by ONNX Runtime. AMD adapters are listed with their index and dedicated memory. Automatic selection chooses the eligible AMD adapter with the most dedicated memory. You can select another listed adapter in the app. Eligibility requires AMD PCI vendor ID 1002 and a successful Direct3D 12 device-creation check. Detection alone is not proof that the OCR models work.
+The desktop enumerates DXGI adapters in the same index order used by ONNX Runtime. AMD adapters are listed with their index and dedicated memory. Automatic selection prefers a discrete AMD adapter with the largest reported available budget, then dedicated capacity. When budget information is unavailable it uses dedicated capacity to break ties. You can select another listed adapter in the app. Eligibility requires AMD PCI vendor ID 1002 and a successful Direct3D 12 device-creation check. Detection alone is not proof that the OCR models work.
 
 The selected adapter must also have the DirectML execution provider available, initialize both verified models, and execute detector and recognizer nodes on DirectML. The export checks those traces before saving its SRT. The log identifies the selected adapter and reports successful model execution. CPU fallback is rejected. Some non-inference graph operations can still be assigned to CPU and are recorded in the diagnostics.
 
