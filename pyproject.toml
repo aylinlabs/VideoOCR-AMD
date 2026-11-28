@@ -79,7 +79,7 @@ exclude = [
 
 # The native ORT wheel and the optional PaddleX APIs lack PEP 561 types.
 [[tool.mypy.overrides]]
-module = ["onnxruntime", "paddlex", "paddlex.inference", "paddlex.inference.common.reader.image_reader"]
+module = ["onnxruntime", "paddlex", "paddlex.inference", "paddlex.inference.common.reader.image_reader", "paddlex.inference.models.text_detection.predictor", "paddlex.inference.models.text_recognition.predictor"]
 ignore_missing_imports = true
 
 [tool.setuptools]
