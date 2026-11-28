@@ -12,6 +12,8 @@ The desktop adapter selection currently names the RX 9070 XT. RX 6000, RX 7000, 
 
 ## Windows reproduction
 
+For the guided test, download this branch as a ZIP from GitHub, extract it, and double-click Run-Performance-Test.cmd. Select the existing VideoOCR-AMD installation folder, select a subtitled video, and enter the same start and end times for every run. Keep the window open. It performs one warmup followed by three one-worker and three three-worker runs. It saves a ZIP and a results folder on the desktop. Review both before sharing because they contain subtitle text and file paths. The results file shows ranges and medians. Each run also includes its DirectML execution evidence and recognition batch histogram. GPU counters are machine-wide and may be unavailable. Check the logs to confirm the actual worker count if memory limits reduce it.
+
 Run the following in PowerShell from this checkout. Replace the paths with a working AMD desktop bundle and the test video. Each output directory must be new.
 
     $python = 'C:\path\to\VideoOCR-AMD\runtime\python.exe'
