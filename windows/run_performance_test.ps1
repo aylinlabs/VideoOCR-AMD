@@ -34,19 +34,16 @@ try {
         privacy = 'Logs may contain file paths and recognized text. Review them before sharing.'
     }
     $metadata | ConvertTo-Json | Set-Content -LiteralPath "$report\test-info.json" -Encoding utf8
-    $counterJob = Start-Job -ArgumentList $report -ScriptBlock {
-        param($Destination)
+    $counterJob = Start-Job -ArgumentList $report, (Join-Path $PSScriptRoot 'gpu_counter_sample.ps1') -ScriptBlock {
+        param($Destination, $CounterScript)
+        . $CounterScript
         while ($true) {
-            foreach ($counter in '\GPU Engine(*)\Utilization Percentage', '\GPU Adapter Memory(*)\Dedicated Usage') {
-                try {
-                    $sample = Get-Counter $counter -ErrorAction Stop
-                    $record = @{ timestamp = (Get-Date).ToString('o'); counters = @($sample.CounterSamples | Where-Object Status -eq 0 | ForEach-Object {
-                        @{ path = $_.Path; value = $_.CookedValue }
-                    }) }
-                    $record | ConvertTo-Json -Depth 5 -Compress | Add-Content -LiteralPath "$Destination\gpu-counters.jsonl" -Encoding utf8
+            foreach ($record in (Get-GpuCounterRecords { param($Counter) Get-Counter $Counter -ErrorAction Stop })) {
+                if ($record.ContainsKey('error')) {
+                    $record | ConvertTo-Json -Compress | Add-Content -LiteralPath "$Destination\gpu-counters-unavailable.txt" -Encoding utf8
                 }
-                catch {
-                    "$(Get-Date -Format o) - $counter - $($_.Exception.Message)" | Add-Content -LiteralPath "$Destination\gpu-counters-unavailable.txt" -Encoding utf8
+                else {
+                    $record | ConvertTo-Json -Depth 5 -Compress | Add-Content -LiteralPath "$Destination\gpu-counters.jsonl" -Encoding utf8
                 }
             }
             Start-Sleep -Seconds 2
