@@ -1,0 +1,13 @@
+# Recognition batch experiment
+
+The PaddleX OCR pipeline collects detected text crops for a batch of images, but then sorts and recognizes each image's crops separately. The recorded seven-minute RX 9070 XT run averaged 1.63 crops per recognition call. The image batch of four does not combine recognition across those images.
+
+This branch does not change the application OCR pipeline or defaults. The opt-in experiment copies its existing Stage 3 input JPEGs and runs the same verified FP32 models on them. It captures each original per-image recognizer call in its original crop order, then replays those same crops per image and in one combined sequence. The recognition model runs at batch sizes 1, 2, 4, 6 and 8, three times each. Every replay compares decoded text and floating-point confidence exactly, crop by crop and in order. It reports measured recognition throughput, process RSS after each replay, model provider assignments, and any differences. No GPU result is claimed until run on the target device.
+
+The captured JPEGs and detection results use the existing pipeline. The benchmark does not construct a candidate SRT, compare candidate bounding boxes or implement cross-image batching in the application. An implementation would require a separate end-to-end comparison of every text region, confidence, polygon, cue and timestamp, including multilingual cases. Batch-dependent padding and input shapes can change recognition, so any difference means the experiment is not eligible for adoption without further analysis. Capturing JPEGs adds time and disk I/O to the baseline capture run; do not compare its total time directly with the earlier 29.04-second benchmark.
+
+## Windows test
+
+Download and extract the feature branch. Double-click `Run-Batch-Experiment.cmd`, select the existing installation folder and choose the same video and 0:00–7:00 interval used for the earlier benchmark. If prompted, select the prior `three-1/output.srt` to check that the captured baseline matches. Wait for the capture and recognition-only comparisons. A ZIP appears on the desktop. The ZIP contains logs, hashes, the baseline SRT and the benchmark results. Review it for private text and paths before sharing. The captured JPEGs remain in the adjacent experiment folder and are excluded from the ZIP.
+
+The recognition-only probe runs one DirectML session to isolate batch effects. The baseline capture uses three workers, subject to the existing memory limit. GPU counters, when available, are machine-wide samples and may include other processes. RSS is process memory after each run, not a peak measurement. Exact batch winners, peak GPU memory by run, full SRT parity for an optimized pipeline, other languages and end-to-end improvement remain unverified.

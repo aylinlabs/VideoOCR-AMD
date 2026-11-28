@@ -173,6 +173,7 @@ def main() -> None:
     parser.add_argument('--start', default='0:00')
     parser.add_argument('--end', default='')
     parser.add_argument('--lang', default='en')
+    parser.add_argument('--capture-recognition-inputs', action='store_true', help='Copy Stage 3 JPEGs for the separate recognition benchmark')
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir()
@@ -190,6 +191,9 @@ def main() -> None:
 
     def run(self: Any, command: list[str], *a: Any) -> Iterator[str]:
         stage = command[1]
+        if stage == 'ocr' and args.capture_recognition_inputs:
+            source = Path(command[command.index('--input') + 1])
+            shutil.copytree(source, out / 'recognition-inputs')
         record(out, event='begin', stage=stage, t=perf_counter())
         with ExitStack() as stack:
             if args.workers:
