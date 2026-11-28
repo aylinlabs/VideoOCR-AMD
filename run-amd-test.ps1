@@ -71,7 +71,7 @@ try {
         Write-Host 'DirectML adapter list:'
         foreach ($a in $adapters) { Write-Host ("  {0}: {1} (vendor {2}, device {3})" -f $a.index, $a.name, $a.vendor_id, $a.device_id) }
         $adapter = Get-SelectedAmdAdapter -Json $adapterJson
-        Status 'AMD adapter' 'PASS' "RX 9070 XT identified at DXGI index $adapter."
+        Status 'AMD adapter' 'PASS' "AMD GPU identified at DXGI index $adapter."
     } catch { $adapter = $null; Status 'AMD adapter' 'UNVERIFIED' "Could not enumerate DXGI adapters: $_" }
     try { Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,PNPDeviceID | Format-List | Out-File -Encoding utf8 (Join-Path $logs 'windows-gpus.txt') } catch { "GPU driver information unavailable: $_" | Set-Content -Encoding utf8 (Join-Path $logs 'windows-gpus.txt') }
     if (-not $ImagePath) {
@@ -168,10 +168,10 @@ try {
         $reasons = @()
         if (-not $ort) { $reasons += 'DirectML environment missing' }
         if (-not $exportOk) { $reasons += 'model export did not succeed' }
-        if ($null -eq $adapter) { $reasons += 'RX 9070 XT adapter not uniquely identified' }
+        if ($null -eq $adapter) { $reasons += 'AMD adapter not uniquely identified' }
         Status 'DirectML experiment' 'UNVERIFIED' ('Skipped: ' + ($reasons -join '; ') + '.')
     }
-    Status 'AMD acceleration' 'UNVERIFIED' 'Inspect both traces and observe the RX 9070 XT during real inference; this smoke test does not verify OCR accuracy.'
+    Status 'AMD acceleration' 'UNVERIFIED' 'Inspect both traces and observe the selected AMD GPU during real inference; this smoke test does not verify OCR accuracy.'
 } catch {
     if (-not $results.Contains('Overall')) { Status 'Overall' 'FAIL' "$_" }
 } finally {
