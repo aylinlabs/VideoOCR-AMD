@@ -36,18 +36,20 @@ try {
     $metadata | ConvertTo-Json | Set-Content -LiteralPath "$report\test-info.json" -Encoding utf8
     $counterJob = Start-Job -ArgumentList $report -ScriptBlock {
         param($Destination)
-        try {
-            while ($true) {
-                $sample = Get-Counter '\GPU Engine(*)\Utilization Percentage', '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction Stop
-                $record = @{ timestamp = (Get-Date).ToString('o'); counters = @($sample.CounterSamples | ForEach-Object {
-                    @{ path = $_.Path; value = $_.CookedValue }
-                }) }
-                $record | ConvertTo-Json -Depth 5 -Compress | Add-Content -LiteralPath "$Destination\gpu-counters.jsonl" -Encoding utf8
-                Start-Sleep -Seconds 2
+        while ($true) {
+            foreach ($counter in '\GPU Engine(*)\Utilization Percentage', '\GPU Adapter Memory(*)\Dedicated Usage') {
+                try {
+                    $sample = Get-Counter $counter -ErrorAction Stop
+                    $record = @{ timestamp = (Get-Date).ToString('o'); counters = @($sample.CounterSamples | Where-Object Status -eq 0 | ForEach-Object {
+                        @{ path = $_.Path; value = $_.CookedValue }
+                    }) }
+                    $record | ConvertTo-Json -Depth 5 -Compress | Add-Content -LiteralPath "$Destination\gpu-counters.jsonl" -Encoding utf8
+                }
+                catch {
+                    "$(Get-Date -Format o) - $counter - $($_.Exception.Message)" | Add-Content -LiteralPath "$Destination\gpu-counters-unavailable.txt" -Encoding utf8
+                }
             }
-        }
-        catch {
-            $_.Exception.Message | Set-Content -LiteralPath "$Destination\gpu-counters-unavailable.txt" -Encoding utf8
+            Start-Sleep -Seconds 2
         }
     }
     $runs = @(@('warmup', 1), @('one-1', 1), @('three-1', 3), @('three-2', 3), @('one-2', 1), @('one-3', 1), @('three-3', 3))
