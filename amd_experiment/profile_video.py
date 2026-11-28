@@ -39,7 +39,7 @@ def record(directory: Path, **row: Any) -> None:
 
 
 def instrument(directory: Path, batch: int, threads: int) -> None:
-    import cv2  # type: ignore[import-untyped]
+    import cv2
     import psutil
     from paddlex.inference.common.reader.image_reader import ReadImage
     from paddlex.inference.models.text_detection.predictor import TextDetRunnerPredictor
